@@ -65,5 +65,19 @@ for (scale_name in names(variable_categories)) {
   print(summary_df)
 }
 ```
+## Project Objectives and Research Questions
+
+### Project Objectives
+1. Conduct comprehensive exploratory data analysis to identify statistically significant relationships between health indicators and diabetes status, including correlation analysis, distribution comparisons, and outlier detection.
+2. Apply multivariate statistical methods to create prediction models for diabetes risk, evaluating the statistical significance and effect size of each predictor variable.
+3. Perform comparative statistical analysis across demographic subgroups to identify significant differences in diabetes risk factors and prevalence.
+
+### Research Questions
+1. Which health indicators show statistically significant differences across the three diabetes status groups (no diabetes, prediabetes, diabetes), and what are their effect sizes?
+2. Is there a statistically significant relationship between BMI and diabetes status when controlling for age, sex, and other confounding variables?
+3. What is the statistical significance of lifestyle factors (physical activity, diet, smoking) in predicting diabetes status, and how do these factors interact with each other?
+4. Using logistic regression modeling, which combination of variables provides the highest predictive power for diabetes classification, and what are their odds ratios?
+5. Are there statistically significant differences in diabetes prevalence across socioeconomic categories (income, education), and how do these relationships change when controlling for health behaviors?
+
 
 ## Data Cleaning and Preprocessing
