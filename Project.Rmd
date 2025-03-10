@@ -1,8 +1,15 @@
+---
+title: "Diabetes Health Indicators Analysis"
+output: html_document
+---
+
+```{r}
+# Load the data
 data = read.csv("./data/diabetes_012_health_indicators_BRFSS2015.csv", header=TRUE)
-data
+head(data)
 str(data)
 
-
+# Explore unique values for each variable
 Diabetes_012 = data[,1]
 unique(Diabetes_012)
 
@@ -36,4 +43,5 @@ unique(Fruits)
 Veggies = data[,10]
 unique(Veggies)
 
+# Display data structure again
 str(data)
