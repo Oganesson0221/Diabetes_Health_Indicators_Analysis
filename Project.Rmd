@@ -1,7 +1,15 @@
 ---
 title: "Diabetes Health Indicators Analysis"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    code_folding: show
+    theme: united
 ---
+
+## Data Loading and Initial Exploration
 
 ```{r}
 # Load the data
@@ -9,39 +17,53 @@ data = read.csv("./data/diabetes_012_health_indicators_BRFSS2015.csv", header=TR
 head(data)
 str(data)
 
-# Explore unique values for each variable
-Diabetes_012 = data[,1]
-unique(Diabetes_012)
+# Explore unique values for each variable in a more efficient way
+unique_values <- lapply(data, unique)
+unique_counts <- sapply(unique_values, length)
 
-HighBP = data[,2]
-unique(HighBP)
+# Create a readable data frame with column names and unique value counts
+unique_summary <- data.frame(
+  Column = names(unique_counts),
+  Unique_Values = unique_counts,
+  row.names = NULL
+)
 
-HighChol = data[,3]
-unique(HighChol)
+# Display the summary table
+print(unique_summary)
 
-CholCheck = data[,4]
-unique(CholCheck)
+# To also see the actual unique values for each column (useful for categorical variables)
+for (col in names(data)) {
+  cat("\n", col, ":", "\n")
+  print(sort(unique_values[[col]]))
+  cat("--------------------------------\n")
+}
 
-BMI = data[,5]
-unique(BMI)
+# Define variables by measurement scale
+variable_categories <- list(
+  Nominal = c("Diabetes_012", "HighBP", "HighChol", "CholCheck", "Smoker", 
+              "Stroke", "HeartDiseaseorAttack", "PhysActivity", "Fruits", 
+              "Veggies", "HvyAlcoholConsump", "AnyHealthcare", "NoDocbcCost", 
+              "DiffWalk", "Sex"),
+  
+  Ordinal = c("GenHlth", "Age", "Education", "Income"),
+  
+  Ratio = c("BMI", "MentHlth", "PhysHlth")
+)
 
-Smoker = data[,6]
-unique(Smoker)
+# Print summary of all variables by measurement scale
+for (scale_name in names(variable_categories)) {
+  cat("\n===", scale_name, "VARIABLES ===\n")
+  var_list <- variable_categories[[scale_name]]
+  
+  # Create a data frame for this category's variables with variable names as row names
+  summary_df <- data.frame(
+    Unique_Values = sapply(var_list, function(v) length(unique(data[[v]]))),
+    Class = sapply(var_list, function(v) class(data[[v]])[1]),
+    row.names = var_list
+  )
+  
+  print(summary_df)
+}
+```
 
-Stroke = data[,7]
-unique(Stroke)
-
-HeartDiseaseorAttack = data[,7]
-unique(HeartDiseaseorAttack)
-
-PhysActivity = data[,8]
-unique(PhysActivity)
-
-Fruits = data[,9]
-unique(Fruits)
-
-Veggies = data[,10]
-unique(Veggies)
-
-# Display data structure again
-str(data)
+## Data Cleaning and Preprocessing
