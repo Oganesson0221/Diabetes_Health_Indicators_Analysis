@@ -9,6 +9,38 @@ output:
     theme: united
 ---
 
+## install and load packages
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+install_and_load_packages <- function(packages) {
+  output <- ""  # Initialize an empty string to collect messages
+  
+  for (pkg in packages) {
+    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+      output <- paste0(output, "Installing: ", pkg, "...\n")
+      suppressMessages(suppressWarnings(
+        install.packages(pkg, dependencies = TRUE, repos = "https://cran.rstudio.com/")
+      ))
+      output <- paste0(output, "✅ Successfully installed: ", pkg, "\n")
+    }
+    suppressMessages(suppressWarnings(
+      library(pkg, character.only = TRUE))
+    )
+    output <- paste0(output, "✅ Loaded: ", pkg, "\n")
+  }
+  
+  cat(output)  # Print all messages in one output cell
+}
+
+# List of packages needed for the analysis
+packages <- c("dplyr", "ggplot2", "tidyr", "corrplot", "caret", "MASS", 
+              "randomForest", "glmnet", "pROC", "e1071", "car", "rmarkdown", 
+              "knitr", "kableExtra", "scales", "gridExtra", "reshape2")
+
+# Install and load packages
+install_and_load_packages(packages)
+
+```
+
 ## Data Loading and Initial Exploration
 
 ```{r}
