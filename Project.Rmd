@@ -113,3 +113,34 @@ for (scale_name in names(variable_categories)) {
 
 
 ## Data Cleaning and Preprocessing
+```{r message=FALSE, warning=FALSE}
+# Check for duplicates
+duplicate_count <- sum(duplicated(data))
+
+# Calculate percentage of duplicates
+duplicate_percentage <- (duplicate_count / nrow(data)) * 100
+
+# Print number and percentage of duplicates found
+cat("Number of duplicates found:", duplicate_count, "\n")
+cat("Percentage of duplicates:", round(duplicate_percentage, 2), "%\n")
+
+# Check for null/NA values in the dataset
+na_counts <- colSums(is.na(data))
+na_percentages <- round((na_counts / nrow(data)) * 100, 2)
+
+# Create a summary data frame
+null_summary <- data.frame(
+  Column = names(data),
+  NA_Count = na_counts,
+  NA_Percentage = na_percentages
+)
+
+# Print only columns with null values (if any)
+if(sum(na_counts) > 0) {
+  cat("Columns with null values:\n")
+  print(null_summary[null_summary$NA_Count > 0, ])
+} else {
+  cat("No null values found in the dataset.\n")
+}
+
+```

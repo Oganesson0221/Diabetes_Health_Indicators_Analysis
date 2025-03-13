@@ -1880,6 +1880,36 @@ behaviors?</li>
 </div>
 <div id="data-cleaning-and-preprocessing" class="section level2">
 <h2>Data Cleaning and Preprocessing</h2>
+<pre class="r"><code># Check for duplicates
+duplicate_count &lt;- sum(duplicated(data))
+
+# Calculate percentage of duplicates
+duplicate_percentage &lt;- (duplicate_count / nrow(data)) * 100
+
+# Print number and percentage of duplicates found
+cat(&quot;Number of duplicates found:&quot;, duplicate_count, &quot;\n&quot;)</code></pre>
+<pre><code>## Number of duplicates found: 23899</code></pre>
+<pre class="r"><code>cat(&quot;Percentage of duplicates:&quot;, round(duplicate_percentage, 2), &quot;%\n&quot;)</code></pre>
+<pre><code>## Percentage of duplicates: 9.42 %</code></pre>
+<pre class="r"><code># Check for null/NA values in the dataset
+na_counts &lt;- colSums(is.na(data))
+na_percentages &lt;- round((na_counts / nrow(data)) * 100, 2)
+
+# Create a summary data frame
+null_summary &lt;- data.frame(
+  Column = names(data),
+  NA_Count = na_counts,
+  NA_Percentage = na_percentages
+)
+
+# Print only columns with null values (if any)
+if(sum(na_counts) &gt; 0) {
+  cat(&quot;Columns with null values:\n&quot;)
+  print(null_summary[null_summary$NA_Count &gt; 0, ])
+} else {
+  cat(&quot;No null values found in the dataset.\n&quot;)
+}</code></pre>
+<pre><code>## No null values found in the dataset.</code></pre>
 </div>
 
 
