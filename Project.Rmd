@@ -144,3 +144,54 @@ if(sum(na_counts) > 0) {
 }
 
 ```
+## EDA 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Data Preparation
+```{r}
+data$Diabetes_012 <- factor(data$Diabetes_012, 
+                            labels = c("No Diabetes", "Prediabetes", "Diagnosed Diabetes"))
+colors <- c("lightblue", "lightgreen")
+```
+
+### Distribution of Lifestyle Factors by Diabetes Status
+```{r}
+par(mfrow = c(2, 3))  # Arrange plots in a grid
+factors <- list(PhysActivity = c("No Physical Activity", "Has Physical Activity"),
+                Fruits = c("No Fruit Consumption", "Has Fruit Consumption"),
+                Veggies = c("No Vegetable Consumption", "Has Vegetable Consumption"),
+                HvyAlcoholConsump = c("No Heavy Alcohol", "Heavy Alcohol Consumption"),
+                AnyHealthcare = c("No Healthcare", "Has Healthcare"),
+                NoDocbcCost = c("Could Afford Doctor", "Could Not Afford Doctor"))
+
+for (factor in names(factors)) {
+  counts <- table(data[[factor]], data$Diabetes_012)
+  bar_positions <- barplot(counts, beside = TRUE, col = colors,
+                           main = paste("Distribution of", factor, "by Diabetes Status"),
+                           xlab = "Diabetes Status", ylab = "Frequency", ylim = c(0, max(counts) * 1.2),
+                           legend.text = factors[[factor]], args.legend = list(x = "topright", bty = "n"))
+  text(x = bar_positions, y = as.vector(counts) + 0.02 * max(counts), 
+       labels = ifelse(counts == 0, "", as.vector(counts)), pos = 3, cex = 0.8, col = "black")
+}
+```
+
+### General Health Rating Distribution
+```{r}
+colors_genhlth <- c("#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854")
+counts <- table(data$GenHlth)
+bar_positions <- barplot(counts, col = colors_genhlth, main = "General Health Ratings",
+                         xlab = "Rating", ylab = "Frequency", ylim = c(0, max(counts) * 1.2),
+                         names.arg = c("Excellent", "Very Good", "Good", "Fair", "Poor"))
+text(x = bar_positions, y = counts + 0.02 * max(counts), labels = counts, pos = 3, cex = 0.8, col = "black")
+```
+
+### Mental Health Analysis
+```{r}
+hist_data <- hist(data$MentHlth, breaks = seq(0, 30, by = 2), plot = FALSE)
+bar_positions <- barplot(log10(hist_data$counts + 1), names.arg = hist_data$mids, col = "lightblue",
+                         main = "Bad Mental Health Days (Log Scale)", xlab = "Days", ylab = "Log10(Frequency)",
+                         ylim = c(0, log10(max(hist_data$counts + 1)) + 1), border = "black", las = 1)
+text(x = bar_positions, y = log10(hist_data$counts + 1), labels = hist_data$counts, pos = 3, cex = 0.8, col = "black")
+```
