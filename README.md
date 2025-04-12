@@ -26,7 +26,7 @@ We analyze the [Diabetes Health Indicators Dataset](https://www.kaggle.com/datas
 | Category       | Techniques Used          | Key Visualizations          |
 |----------------|-------------------------|----------------------------|
 | Univariate     | Frequency distributions | Bar plots, Histograms      |
-| Bivariate      | Correlation analysis    | Heatmaps, Box plots        |
+| Bivariate      | Correlation analysis    | Box plots        |
 | Data Quality   | Missing value checks    | Summary tables             |
 
 
@@ -36,7 +36,7 @@ We analyze the [Diabetes Health Indicators Dataset](https://www.kaggle.com/datas
 Diabetes_Health_Indicators_Analysis/
 ├── diabetes_analysis.Rmd       # Main R Markdown analysis file
 ├── data/diabetes_012_health_indicators_BRFSS2015.csv  # Dataset
-├── README.md                   # This file
+├── README.md
 ```
 
 ## Key Analyses
