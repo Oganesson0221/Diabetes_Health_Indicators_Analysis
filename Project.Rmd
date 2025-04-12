@@ -1,197 +1,586 @@
+
+```r
 ---
 title: "Diabetes Health Indicators Analysis"
-output: 
-  html_document:
-    toc: true
-    toc_float: true
-    toc_depth: 3
-    code_folding: show
-    theme: united
+author: "MH3511 Project"
+date: "`r Sys.Date()`"
+output: html_document
 ---
 
-## install and load packages
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-install_and_load_packages <- function(packages) {
-  output <- ""  # Initialize an empty string to collect messages
-  
-  for (pkg in packages) {
-    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-      output <- paste0(output, "Installing: ", pkg, "...\n")
-      suppressMessages(suppressWarnings(
-        install.packages(pkg, dependencies = TRUE, repos = "https://cran.rstudio.com/")
-      ))
-      output <- paste0(output, "✅ Successfully installed: ", pkg, "\n")
-    }
-    suppressMessages(suppressWarnings(
-      library(pkg, character.only = TRUE))
-    )
-    output <- paste0(output, "✅ Loaded: ", pkg, "\n")
-  }
-  
-  cat(output)  # Print all messages in one output cell
-}
-
-# List of packages needed for the analysis
-packages <- c("dplyr", "ggplot2", "tidyr", "corrplot", "caret", "MASS", 
-              "randomForest", "glmnet", "pROC", "e1071", "car", "rmarkdown", 
-              "knitr", "kableExtra", "scales", "gridExtra", "reshape2")
-
-# Install and load packages
-install_and_load_packages(packages)
-
-```
-
-## Data Loading and Initial Exploration
-
-```{r}
-# Load the data
-data = read.csv("./data/diabetes_012_health_indicators_BRFSS2015.csv", header=TRUE)
-head(data)
-str(data)
-
-# Explore unique values for each variable in a more efficient way
-unique_values <- lapply(data, unique)
-unique_counts <- sapply(unique_values, length)
-
-# Create a readable data frame with column names and unique value counts
-unique_summary <- data.frame(
-  Column = names(unique_counts),
-  Unique_Values = unique_counts,
-  row.names = NULL
-)
-
-# Display the summary table
-print(unique_summary)
-
-# To also see the actual unique values for each column (useful for categorical variables)
-for (col in names(data)) {
-  cat("\n", col, ":", "\n")
-  print(sort(unique_values[[col]]))
-  cat("--------------------------------\n")
-}
-
-# Define variables by measurement scale
-variable_categories <- list(
-  Nominal = c("Diabetes_012", "HighBP", "HighChol", "CholCheck", "Smoker", 
-              "Stroke", "HeartDiseaseorAttack", "PhysActivity", "Fruits", 
-              "Veggies", "HvyAlcoholConsump", "AnyHealthcare", "NoDocbcCost", 
-              "DiffWalk", "Sex"),
-  
-  Ordinal = c("GenHlth", "Age", "Education", "Income"),
-  
-  Ratio = c("BMI", "MentHlth", "PhysHlth")
-)
-
-# Print summary of all variables by measurement scale
-for (scale_name in names(variable_categories)) {
-  cat("\n===", scale_name, "VARIABLES ===\n")
-  var_list <- variable_categories[[scale_name]]
-  
-  # Create a data frame for this category's variables with variable names as row names
-  summary_df <- data.frame(
-    Unique_Values = sapply(var_list, function(v) length(unique(data[[v]]))),
-    Class = sapply(var_list, function(v) class(data[[v]])[1]),
-    row.names = var_list
-  )
-  
-  print(summary_df)
-}
-```
-## Project Objectives and Research Questions
-
-### Project Objectives
-1. Conduct comprehensive exploratory data analysis to identify statistically significant relationships between health indicators and diabetes status, including correlation analysis, distribution comparisons, and outlier detection.
-2. Apply multivariate statistical methods to create prediction models for diabetes risk, evaluating the statistical significance and effect size of each predictor variable.
-3. Perform comparative statistical analysis across demographic subgroups to identify significant differences in diabetes risk factors and prevalence.
-
-### Research Questions
-1. Which health indicators show statistically significant differences across the three diabetes status groups (no diabetes, prediabetes, diabetes), and what are their effect sizes?
-2. Is there a statistically significant relationship between BMI and diabetes status when controlling for age, sex, and other confounding variables?
-3. What is the statistical significance of lifestyle factors (physical activity, diet, smoking) in predicting diabetes status, and how do these factors interact with each other?
-4. Using logistic regression modeling, which combination of variables provides the highest predictive power for diabetes classification, and what are their odds ratios?
-5. Are there statistically significant differences in diabetes prevalence across socioeconomic categories (income, education), and how do these relationships change when controlling for health behaviors?
-
-
-## Data Cleaning and Preprocessing
-```{r message=FALSE, warning=FALSE}
-# Check for duplicates
-duplicate_count <- sum(duplicated(data))
-
-# Calculate percentage of duplicates
-duplicate_percentage <- (duplicate_count / nrow(data)) * 100
-
-# Print number and percentage of duplicates found
-cat("Number of duplicates found:", duplicate_count, "\n")
-cat("Percentage of duplicates:", round(duplicate_percentage, 2), "%\n")
-
-# Check for null/NA values in the dataset
-na_counts <- colSums(is.na(data))
-na_percentages <- round((na_counts / nrow(data)) * 100, 2)
-
-# Create a summary data frame
-null_summary <- data.frame(
-  Column = names(data),
-  NA_Count = na_counts,
-  NA_Percentage = na_percentages
-)
-
-# Print only columns with null values (if any)
-if(sum(na_counts) > 0) {
-  cat("Columns with null values:\n")
-  print(null_summary[null_summary$NA_Count > 0, ])
-} else {
-  cat("No null values found in the dataset.\n")
-}
-
-```
-## EDA 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
-### Data Preparation
-```{r}
-data$Diabetes_012 <- factor(data$Diabetes_012, 
-                            labels = c("No Diabetes", "Prediabetes", "Diagnosed Diabetes"))
-colors <- c("lightblue", "lightgreen")
-```
+# 1. Introduction
 
-### Distribution of Lifestyle Factors by Diabetes Status
-```{r}
-par(mfrow = c(2, 3))  # Arrange plots in a grid
-factors <- list(PhysActivity = c("No Physical Activity", "Has Physical Activity"),
-                Fruits = c("No Fruit Consumption", "Has Fruit Consumption"),
-                Veggies = c("No Vegetable Consumption", "Has Vegetable Consumption"),
-                HvyAlcoholConsump = c("No Heavy Alcohol", "Heavy Alcohol Consumption"),
-                AnyHealthcare = c("No Healthcare", "Has Healthcare"),
-                NoDocbcCost = c("Could Afford Doctor", "Could Not Afford Doctor"))
+This script analyzes diabetes health indicators from the BRFSS2015 dataset.
 
-for (factor in names(factors)) {
-  counts <- table(data[[factor]], data$Diabetes_012)
-  bar_positions <- barplot(counts, beside = TRUE, col = colors,
-                           main = paste("Distribution of", factor, "by Diabetes Status"),
-                           xlab = "Diabetes Status", ylab = "Frequency", ylim = c(0, max(counts) * 1.2),
-                           legend.text = factors[[factor]], args.legend = list(x = "topright", bty = "n"))
-  text(x = bar_positions, y = as.vector(counts) + 0.02 * max(counts), 
-       labels = ifelse(counts == 0, "", as.vector(counts)), pos = 3, cex = 0.8, col = "black")
+# 2. Project Objectives and Research Questions
+
+**Objectives:**
+- Analyze factors associated with diabetes status
+- Build predictive models for diabetes classification
+
+# 3. Data Description and Preparation
+
+```{r data_prep}
+# Load necessary libraries
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(dplyr)
+
+# Load data
+diabetes_data <- read.csv("diabetes_012_health_indicators_BRFSS2015.csv", header = TRUE)
+
+# Examine structure
+str(diabetes_data)
+
+# Check unique values for each variable
+check_unique <- function(col) {
+  unique(diabetes_data[,col])
 }
+
+variables <- colnames(diabetes_data)
+unique_values <- lapply(variables, check_unique)
+names(unique_values) <- variables
+unique_values
 ```
 
-### General Health Rating Distribution
-```{r}
-colors_genhlth <- c("#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854")
-counts <- table(data$GenHlth)
-bar_positions <- barplot(counts, col = colors_genhlth, main = "General Health Ratings",
-                         xlab = "Rating", ylab = "Frequency", ylim = c(0, max(counts) * 1.2),
+# 4. Data Analysis
+
+## 4.1 Summary Statistics
+
+```{r summary_stats}
+# Convert Diabetes_012 to factor
+diabetes_data$Diabetes_012 <- factor(diabetes_data$Diabetes_012,
+                                     levels = c(0, 1, 2),
+                                     labels = c("No Diabetes", "Prediabetes", "Diagnosed Diabetes"))
+
+# Function for plotting categorical variables
+plot_categorical <- function(data, var) {
+  ggplot(data, aes(x = factor(get(var)))) +
+    geom_bar(fill = "steelblue") +
+    labs(title = paste("Frequency Plot of", var), x = var, y = "Count") +
+    theme_minimal()
+}
+# Load required packages
+library(ggplot2)
+library(gridExtra)
+
+# Function for plotting categorical variables 
+plot_categorical <- function(data, var) {
+  ggplot(data, aes(x = factor(get(var)))) +
+    geom_bar(fill = "steelblue") +
+    labs(title = paste("Frequency Plot of", var), x = var, y = "Count") +
+    theme_minimal()
+}
+
+# Diabetes status
+bp <- barplot(table(diabetes_data$Diabetes_012),
+              main = "Distribution of Diabetes Status",
+              col = c("lightblue", "lightgreen", "lightcoral"),
+              names.arg = c("No Diabetes", "Prediabetes", "Diagnosed Diabetes"),
+              ylab = "Frequency",
+              xlab = "Diabetes Status",
+              ylim = c(0, 253681),
+              yaxt = "n")
+axis(2, at = seq(0, 253681, by = 25000), labels = seq(0, 253681, by = 25000))
+counts <- table(diabetes_data$Diabetes_012)
+text(bp, counts + 100, labels = counts, col = "black", cex = 0.7)
+
+# High BP
+plot_categorical(diabetes_data, "HighBP")
+
+# High Cholesterol
+plot_categorical(diabetes_data, "HighChol")
+
+# CholCheck
+plot_categorical(diabetes_data, "CholCheck")
+
+# BMI analysis
+BMI <- diabetes_data$BMI
+hist(BMI, breaks = 50, main = "Histogram of BMI")
+summary(BMI)
+boxplot(BMI, main = "Boxplot of BMI")
+
+# Log transformation of BMI
+log_BMI <- log(BMI)
+hist(log_BMI, breaks = 40, main = "Histogram of log(BMI)")
+boxplot(log_BMI, main = "Boxplot of log(BMI)")
+
+# Smoker
+plot_categorical(diabetes_data, "Smoker")
+
+# Stroke
+plot_categorical(diabetes_data, "Stroke")
+
+# Heart Disease or Attack
+plot_categorical(diabetes_data, "HeartDiseaseorAttack")
+
+# Physical Activity
+plot_categorical(diabetes_data, "PhysActivity")
+
+# Fruits
+plot_categorical(diabetes_data, "Fruits")
+
+# Veggies
+plot_categorical(diabetes_data, "Veggies")
+
+# Heavy Alcohol Consumption
+plot_categorical(diabetes_data, "HvyAlcoholConsump")
+
+# Any Healthcare
+plot_categorical(diabetes_data, "AnyHealthcare")
+
+# No Doctor Due to Cost
+plot_categorical(diabetes_data, "NoDocbcCost")
+
+# General Health
+colors <- c("#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854")  
+counts <- table(diabetes_data$GenHlth)
+bar_positions <- barplot(counts, 
+                         col = colors, 
+                         main = "Distribution of General Health Ratings", 
+                         xlab = "General Health Rating", 
+                         ylab = "Frequency",
+                         ylim = c(0, max(counts) * 1.2), 
                          names.arg = c("Excellent", "Very Good", "Good", "Fair", "Poor"))
-text(x = bar_positions, y = counts + 0.02 * max(counts), labels = counts, pos = 3, cex = 0.8, col = "black")
+text(x = bar_positions, 
+     y = counts + (0.02 * max(counts)),  
+     labels = counts, 
+     pos = 3, cex = 0.8, col = "black")
+
+# Mental Health
+hist_data <- hist(diabetes_data$MentHlth, plot = FALSE)
+bar_positions <- barplot(log10(hist_data$counts + 1), 
+                         names.arg = hist_data$breaks[-1], 
+                         col = "lightblue", 
+                         main = "Distribution of Bad Mental Health Days (Log Scale)", 
+                         xlab = "Number of Bad Mental Health Days (Past 30 Days)", 
+                         ylab = "Log10(Frequency)",
+                         ylim = c(0, log10(max(hist_data$counts + 1))+1))
+text(x = bar_positions, 
+     y = log10(hist_data$counts + 1), 
+     labels = hist_data$counts,
+     pos = 3, cex = 0.8, col = "black")
+
+# Physical Health
+plot_categorical(diabetes_data, "PhysHlth")
+
+# Difficulty Walking
+plot_categorical(diabetes_data, "DiffWalk")
+
+# Sex
+plot_categorical(diabetes_data, "Sex")
+
+# Age distribution
+hist_plot <- ggplot(diabetes_data, aes(x = Age)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Age",
+       x = "Age Group",
+       y = "Frequency") +
+  scale_x_continuous(breaks = seq(1, 13, by = 1), 
+                     labels = c("18-24", "25-29", "30-34", "35-39", "40-44", 
+                                "45-49", "50-54", "55-59", "60-64", "65-69", 
+                                "70-74", "75-79", "80+")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+box_plot <- ggplot(diabetes_data, aes(y = Age)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(title = "Boxplot of Age",
+       y = "Age Group") +
+  scale_y_continuous(breaks = seq(1, 13, by = 1), 
+                     labels = c("18-24", "25-29", "30-34", "35-39", "40-44", 
+                                "45-49", "50-54", "55-59", "60-64", "65-69", 
+                                "70-74", "75-79", "80+")) +
+  theme_minimal()
+
+grid.arrange(hist_plot, box_plot, ncol = 2)
+
+# Education
+plot_categorical(diabetes_data, "Education")
+
+# Income
+plot_categorical(diabetes_data, "Income")
 ```
 
-### Mental Health Analysis
-```{r}
-hist_data <- hist(data$MentHlth, breaks = seq(0, 30, by = 2), plot = FALSE)
-bar_positions <- barplot(log10(hist_data$counts + 1), names.arg = hist_data$mids, col = "lightblue",
-                         main = "Bad Mental Health Days (Log Scale)", xlab = "Days", ylab = "Log10(Frequency)",
-                         ylim = c(0, log10(max(hist_data$counts + 1)) + 1), border = "black", las = 1)
-text(x = bar_positions, y = log10(hist_data$counts + 1), labels = hist_data$counts, pos = 3, cex = 0.8, col = "black")
+## 4.2 Associations between variables and Diabetes_012
+
+```{r associations}
+### 4.2.1 Categorical Variables (Nominal Scale) - Cramer's V test
+library(vcd)
+
+diabetes_cat <- diabetes_data[, c(2,3,4,6,7,8,9,10,11,12,13,14,18,19)]
+
+calc_cramerV <- function(var1, var2) {
+  cont_table <- table(var1, var2)
+  association_stats <- assocstats(cont_table)
+  return(association_stats$cramer)
+}
+
+cramers_v_results <- data.frame(Category = character(), 
+                                CramersV_Value = numeric(), 
+                                stringsAsFactors = FALSE)
+
+for (col in colnames(diabetes_cat)) {
+  cramers_v <- calc_cramerV(diabetes_data$Diabetes_012, diabetes_cat[[col]])
+  cramers_v_results <- rbind(cramers_v_results, 
+                             data.frame(Category = col, 
+                                        CramersV_Value = cramers_v))
+}
+cramers_v_results
+
+### 4.2.2 Categorical Variables (Ordinal Scale) - Kruskal-Wallis
+diabetes_ord <- diabetes_data[, c(15,20,21,22)]
+
+kruskaltest_result <- data.frame(OrdinalVar = character(),
+                                 Kruskal_statistic = numeric(), 
+                                 PValue = numeric(), 
+                                 stringsAsFactors = FALSE)
+
+for (col in colnames(diabetes_ord)) {
+  kruskal_test <- kruskal.test(diabetes_ord[[col]] ~ diabetes_data$Diabetes_012)
+  kruskaltest_result <- rbind(kruskaltest_result, 
+                              data.frame(OrdinalVar = col,
+                                         Kruskal_statistic = kruskal_test$statistic,
+                                         PValue = kruskal_test$p.value))
+}
+kruskaltest_result
+
+### 4.2.3 Numerical Variables - Kruskal-Wallis and ANOVA
+diabetes_num <- diabetes_data[, c(16,17)]
+
+numktest_result <- data.frame(NumVar = character(),
+                              K_statistic = numeric(), 
+                              P_value = numeric(), 
+                              stringsAsFactors = FALSE)
+
+for (col in colnames(diabetes_num)) {
+  numk_test <- kruskal.test(diabetes_num[[col]] ~ diabetes_data$Diabetes_012)
+  numktest_result <- rbind(numktest_result, 
+                           data.frame(NumVar = col,
+                                      K_statistic = numk_test$statistic,
+                                      P_value = numk_test$p.value))
+}
+numktest_result
+
+# ANOVA for log(BMI)
+log_BMI <- log(diabetes_data$BMI)
+qqnorm(log_BMI)
+qqline(log_BMI)
+
+anova_test <- aov(log_BMI ~ Diabetes_012, data = diabetes_data)
+summary(anova_test)
+```
+
+# 5. Statistical Analysis
+
+## 5.1 Hypothesis testing (Single Variable)
+
+```{r hypothesis_testing}
+### 5.1.1 Chi-Square Test
+table_highbp <- table(diabetes_data$Diabetes_012, diabetes_data$HighChol)
+chisq.test(table_highbp)
+
+### 5.1.2 Kruskal-Wallis Rank Sum Test
+# Age vs Diabetes
+kruskal.test(Age ~ Diabetes_012, data = diabetes_data)
+
+# Physical Health vs Diabetes
+physhlth_diabetes <- data.frame(PhysHlth = diabetes_data$PhysHlth,
+                                Diabetes_012 = diabetes_data$Diabetes_012)
+boxplot(PhysHlth ~ Diabetes_012, data = physhlth_diabetes)
+kruskal.test(PhysHlth ~ Diabetes_012, data = physhlth_diabetes)
+
+### 5.1.3 One-Way ANOVA Test
+library(DescTools)
+fit <- aov(log(BMI) ~ Diabetes_012, data = diabetes_data)
+summary(fit)
+EtaSq(fit)
+
+### 5.1.4 Proportional Test
+n <- sum(diabetes_data$Diabetes_012 == "No Diabetes")
+x <- sum(diabetes_data$HighBP == 1 & diabetes_data$Diabetes_012 == "No Diabetes")
+p0 <- 0.55
+prop.test(x, n, p = p0, conf.level = 0.95)
+
+### 5.1.5 Wilcoxon Rank Sum Test
+dia_or_nodia_mental <- diabetes_data[diabetes_data$Diabetes_012 %in% c("No Diabetes", "Diagnosed Diabetes"), 
+                                     c("Diabetes_012", "MentHlth")]
+boxplot(MentHlth ~ Diabetes_012, data = dia_or_nodia_mental)
+wilcox_result <- wilcox.test(MentHlth ~ Diabetes_012, 
+                             data = dia_or_nodia_mental, 
+                             exact = FALSE)
+wilcox_result
+```
+
+# 6. Appendix
+
+## 6.1 Figures (already created in previous sections)
+
+## 6.2 Hypothesis testing (Multi Variable)
+
+```{r multivariable_testing}
+### 6.2.1 Ordinal Logistic Regression
+library(MASS)
+library(brant)
+library(VGAM)
+
+# Convert BMI to categorical
+diabetes_data$BMIlevel <- cut(diabetes_data$BMI, 
+                              breaks = c(-Inf, 18.5, 24.9, 29.9, Inf), 
+                              labels = c(1, 2, 3, 4))
+diabetes_data$BMIlevel <- as.factor(diabetes_data$BMIlevel)
+
+physioFactors <- data.frame(bmiLevel = diabetes_data$BMIlevel,
+                            bpLevel = as.factor(diabetes_data$HighBP),
+                            cholLevel = as.factor(diabetes_data$HighChol),
+                            diabeteStatus = diabetes_data$Diabetes_012)
+
+# Proportional Odds Model
+model <- polr(diabeteStatus ~ bpLevel + cholLevel + bmiLevel, 
+              data = physioFactors, Hess = TRUE)
+brant(model)
+
+# Partial Proportional Odds Model
+model_ppo <- vglm(diabeteStatus ~ bpLevel * cholLevel * bmiLevel, 
+                  family = cumulative(parallel = FALSE ~ bpLevel + cholLevel), 
+                  data = physioFactors)
+summary(model_ppo)
+anova(model_ppo, type = 'III')
+
+### 6.2.2 Nested Multivariable Model Comparison
+library(caret)
+
+# Prepare data for modeling
+model_data <- diabetes_data %>%
+  mutate(
+    Diabetes_012 = factor(Diabetes_012, ordered = TRUE),
+    Income = ordered(Income, levels = 1:8),
+    Education = ordered(Education, levels = 1:6),
+    AnyHealthcare = factor(AnyHealthcare),
+    NoDocbcCost = factor(NoDocbcCost)
+  )
+
+# Core model
+model_core <- polr(Diabetes_012 ~ Income + Education, 
+                   data = model_data, Hess = TRUE)
+
+# Extended model
+model_extended <- polr(Diabetes_012 ~ Income + Education + AnyHealthcare + NoDocbcCost, 
+                       data = model_data, Hess = TRUE)
+
+# Likelihood ratio test
+lr_test_polr <- function(model1, model2,
+                         model1_name = "Income + Education",
+                         model2_name = "Income + Education + AnyHealthcare + NoDocbcCost",
+                         response_name = "Diabetes_012") {
+  
+  if (model1$nobs != model2$nobs)
+    stop("Models must have the same number of observations.")
+  
+  nobs <- model1$nobs
+  dev1 <- model1$deviance
+  dev2 <- model2$deviance
+  npar1 <- length(coef(model1)) + length(model1$zeta)
+  npar2 <- length(coef(model2)) + length(model2$zeta)
+  df1 <- nobs - npar1
+  df2 <- nobs - npar2
+  lr_stat <- dev1 - dev2
+  df_diff <- npar2 - npar1
+  p_val <- pchisq(lr_stat, df_diff, lower.tail = FALSE)
+  
+  cat("Likelihood ratio tests of ordinal regression models\n\n")
+  cat("Response:", response_name, "\n\n")
+  
+  # Header row
+  cat(sprintf("%-47s %10s %12s %8s %3s %9s %8s\n",
+              "Model", "Resid. df", "Resid. Dev", "Test", "Df", "LR stat.", "Pr(Chi)"))
+  
+  # Model 1 row
+  cat(sprintf("%-3s %-43s %10.1f %12.1f\n",
+              "1", model1_name, df1, dev1))
+  
+  # Model 2 row + LR test
+  cat(sprintf("%-3s %-43s %10.1f %12.1f %8s %3d %9.4f %8.4g\n",
+              "2", model2_name, df2, dev2, "1 vs 2", df_diff, lr_stat, p_val))
+  
+  invisible(list(
+    model1_name = model1_name,
+    model2_name = model2_name,
+    dev1 = dev1,
+    dev2 = dev2,
+    df1 = df1,
+    df2 = df2,
+    df_diff = df_diff,
+    lr_stat = lr_stat,
+    p_val = p_val
+  ))
+}
+
+# Perform test
+lr_test_result <- lr_test_polr(model_core, model_extended)
+
+# Model summaries
+summary(model_core)
+summary(model_extended)
+
+# Predicted probabilities plot
+probs_core <- predict(model_core, type = "probs")
+probs_ext <- predict(model_extended, type = "probs")
+core_diab <- probs_core[, "Diagnosed Diabetes"]
+ext_diab <- probs_ext[, "Diagnosed Diabetes"]
+df_core <- data.frame(Probability = core_diab, Model = "Core")
+df_ext <- data.frame(Probability = ext_diab, Model = "Extended")
+df_plot <- rbind(df_core, df_ext)
+
+ggplot(df_plot, aes(x = Probability, fill = Model)) +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(values = c("Core" = "#FF9999", "Extended" = "#99CC99")) +
+  labs(
+    title = "Density Plot of Predicted Probabilities",
+    subtitle = "Comparison between Core and Extended Models",
+    x = "Predicted Probability for Diagnosed Diabetes",
+    y = "Density"
+  ) +
+  theme_minimal()
+```
+
+## 6.3 Machine Learning
+
+### Decision Tree for Diabetes Prediction
+
+```{r decision_tree}
+# Prepare data
+diabetes_data_ml <- diabetes_data %>%
+  mutate(
+    Diabetes_012 = factor(Diabetes_012, 
+                          levels = c("No Diabetes", "Prediabetes", "Diagnosed Diabetes")),
+    log_BMI = log(BMI + 1),
+    across(c(HighBP, HighChol, CholCheck, Smoker, Stroke, HeartDiseaseorAttack,
+             PhysActivity, Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare,
+             NoDocbcCost, DiffWalk, Sex), as.factor)
+  )
+
+# Sample data for faster execution
+set.seed(123)
+data_sample <- sample_n(diabetes_data_ml, 10000)
+
+# Split data
+train_index <- createDataPartition(data_sample$Diabetes_012, p = 0.7, list = FALSE)
+train_data <- data_sample[train_index, ]
+test_data <- data_sample[-train_index, ]
+
+# Build decision tree
+tree_model <- rpart(Diabetes_012 ~ HighBP + HighChol + log_BMI + Smoker + Stroke + 
+                      HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + 
+                      HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + 
+                      MentHlth + PhysHlth + DiffWalk + Sex + Age + Education + Income,
+                    data = train_data,
+                    method = "class",
+                    control = rpart.control(minsplit = 20,
+                                            minbucket = 10,
+                                            cp = 0.001,
+                                            maxdepth = 5))
+
+# Visualize tree
+rpart.plot(tree_model, 
+           type = 4, 
+           extra = 104, 
+           box.palette = "GnBu",
+           branch.lty = 3, 
+           shadow.col = "gray", 
+           nn = TRUE,
+           main = "Decision Tree for Diabetes Prediction")
+
+# Print and plot complexity parameter table
+printcp(tree_model)
+plotcp(tree_model)
+
+# Make predictions on test data
+predictions <- predict(tree_model, test_data, type = "class")
+
+# Create confusion matrix
+confusion_matrix <- confusionMatrix(predictions, test_data$Diabetes_012)
+print(confusion_matrix)
+
+# Feature importance
+importance <- varImp(tree_model, scale = TRUE)  # Added scale=TRUE for standardized importance
+importance <- importance[order(-importance$Overall), , drop = FALSE]
+print(importance)
+
+# Plot feature importance with improved visualization
+importance_df <- data.frame(Feature = rownames(importance), Importance = importance$Overall)
+
+ggplot(importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue", width = 0.7) +
+  geom_text(aes(label = round(Importance, 2)), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Feature Importance in Diabetes Prediction", 
+       x = "Features", 
+       y = "Importance Score") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.y = element_text(size = 10),
+        panel.grid.major.y = element_blank()) +
+  expand_limits(y = max(importance_df$Importance) * 1.2)
+```
+
+### Decision Tree for Prediabetes Prediction (with upsampling)
+
+```{r prediabetes_tree}
+# Upsample prediabetes cases
+train_data_upsampled <- upSample(x = train_data[, -1],
+                                 y = train_data$Diabetes_012,
+                                 yname = "Diabetes_012") %>%
+  as.data.frame()
+
+# Build tree with focus on prediabetes
+tree_model_prediabetes <- rpart(Diabetes_012 ~ .,
+                                data = train_data_upsampled,
+                                method = "class",
+                                parms = list(split = "information"),
+                                control = rpart.control(
+                                  minsplit = 20,
+                                  minbucket = 7,
+                                  cp = 0.0005,
+                                  maxdepth = 6,
+                                  loss = matrix(c(0, 1, 1,
+                                                  1, 0, 1,
+                                                  1, 1, 0), nrow = 3)))
+
+# Visualize with prediabetes highlighted
+rpart.plot(tree_model_prediabetes, 
+           type = 4, 
+           extra = 104,
+           box.palette = list("No Diabetes" = "lightgreen", 
+                              "Prediabetes" = "gold", 
+                              "Diagnosed Diabetes" = "salmon"),
+           main = "Decision Tree with Prediabetes Focus")
+
+# Evaluate prediabetes model
+predictions_prediabetes <- predict(tree_model_prediabetes, test_data, type = "class")
+conf_matrix_prediabetes <- confusionMatrix(predictions_prediabetes, test_data$Diabetes_012)
+print(conf_matrix_prediabetes$byClass["Class: Prediabetes",])
+
+# Feature importance for prediabetes
+importance_prediabetes <- varImp(tree_model_prediabetes, scale = TRUE)
+importance_prediabetes <- importance_prediabetes[order(-importance_prediabetes$Overall), , drop = FALSE]
+
+ggplot(importance_prediabetes, aes(x = reorder(rownames(importance_prediabetes), Overall), y = Overall)) +
+  geom_bar(stat = "identity", fill = "gold") +
+  geom_text(aes(label = round(Overall, 2)), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Feature Importance for Prediabetes Prediction",
+       x = "Features",
+       y = "Importance Score") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.text.y = element_text(size = 10),
+        panel.grid.major.y = element_blank()) +
+  expand_limits(y = max(importance_prediabetes$Overall) * 1.2)
+
 ```
