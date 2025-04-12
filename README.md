@@ -65,9 +65,8 @@ Diabetes_Health_Indicators_Analysis/
    - Age (p < 0.001)
 
 2. **Decision Tree Performance**:
-   - Overall accuracy: 83.4%
-   - Prediabetes recall: 62.1% (improved to 68.5% with upsampling)
-   - Top predictive features: BMI, HighBP, GenHlth, Age
+   - Overall accuracy: 84.76%
+   - Top predictive features: GenHlth, BMI, HighBP, HighChol
 
 ## How to Run
 
