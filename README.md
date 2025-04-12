@@ -36,6 +36,7 @@ We analyze the [Diabetes Health Indicators Dataset](https://www.kaggle.com/datas
 Diabetes_Health_Indicators_Analysis/
 ├── Project.Rmd       # Main R Markdown analysis file
 ├── data/diabetes_012_health_indicators_BRFSS2015.csv  # Dataset
+├── figures    # Contains the plots, and images 
 ├── README.md
 ```
 
