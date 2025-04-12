@@ -8,12 +8,27 @@
 
 This project analyzes diabetes health indicators from the BRFSS2015 dataset to identify factors associated with diabetes status and build predictive models for diabetes classification.
 
-## Dataset
 
-The dataset used is `diabetes_012_health_indicators_BRFSS2015.csv`, which contains:
-- 253,680 survey responses
-- 21 health indicators
-- 3-class diabetes status (No Diabetes, Prediabetes, Diagnosed Diabetes)
+## 📂 Dataset
+
+We analyze the [Diabetes Health Indicators Dataset](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset) from the **2015 Behavioral Risk Factor Surveillance System (BRFSS)**:
+
+- 📌 **253,680** survey responses
+- 📌 **21** health indicators
+- 📌 **3-class** diabetes status:
+  - No Diabetes
+  - Prediabetes 
+  - Diagnosed Diabetes
+
+## 📊 Analysis Highlights
+
+### 🔍 Exploratory Analysis
+| Category       | Techniques Used          | Key Visualizations          |
+|----------------|-------------------------|----------------------------|
+| Univariate     | Frequency distributions | Bar plots, Histograms      |
+| Bivariate      | Correlation analysis    | Heatmaps, Box plots        |
+| Data Quality   | Missing value checks    | Summary tables             |
+
 
 ## Project Structure
 
@@ -79,7 +94,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Data source: BRFSS 2015 survey [https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset]
+- Data source: [BRFSS 2015 on Kaggle](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset)
 - R community for open-source packages
 - Inspired by CDC diabetes research
-```
