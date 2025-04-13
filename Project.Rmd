@@ -250,14 +250,23 @@ bp_genhlth <- barplot(counts_gh,
 text(bp_genhlth, counts_gh + 0.02 * max(counts_gh), labels = counts_gh, pos = 3, cex = 0.8)
 
 # Distribution of Mentally Unhealthy Days (log scale)
-hist_data <- hist(diabetes_data$MentHlth, breaks = seq(0, 30, by = 2), plot = FALSE)
-bp_ment <- barplot(log10(hist_data$counts + 1),
+hist_data <- hist(diabetes_data$MentHlth, 
+                  breaks = seq(0, 30, by = 2), 
+                  plot = FALSE, 
+                  main = 'Frequency of Days in Bad Mental Health')
+
+bp_ment <- barplot(hist_data$counts,
                    names.arg = hist_data$mids,
                    col = "lightblue",
-                   main = "Distribution of Bad Mental Health Days (Log Scale)",
-                   xlab = "Days", ylab = "Log10(Frequency)",
-                   ylim = c(0, log10(max(hist_data$counts + 1)) + 1))
-text(bp_ment, log10(hist_data$counts + 1), labels = hist_data$counts, pos = 3, cex = 0.8)
+                   main = "Frequency of Days in Bad Mental Health",
+                   xlab = "Days", 
+                   ylab = "Frequency",
+                   ylim = c(0, max(hist_data$counts) + 1))
+
+text(bp_ment, hist_data$counts, 
+     labels = hist_data$counts, 
+     pos = 3, 
+     cex = 0.8)
 ```
 
 *The above code visualizes self-rated general health and the number of mentally unhealthy days (transformed to log scale).*
