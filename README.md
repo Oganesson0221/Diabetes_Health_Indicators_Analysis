@@ -117,7 +117,7 @@ Diabetes_Health_Indicators_Analysis/
 ## Contributors
 
 - **[Low Jo Yi, Nicole]()**: Summary Statistics, Proportional Testing, Formatting
-- **[Tian Yumeng]()**: Summary Statistics, Single Variable Hypothesis Testing
+- **[Tian Yumeng](https://github.com/TianYumeng03)**: Summary Statistics, Single Variable Hypothesis Testing
 - **[Lu ShanShan](https://github.com/shan2lu)**: Data description, finding associations, Wilcoxon Rank Sum Test, Ordinal Logistic Regression
 - **[Mehta Rishika](https://github.com/Oganesson0221)**: Data description, Summary Statistics, research questions, Statistical analysis, Machine Learning
 - **[Zhao Qixian](https://github.com/ZhaoQixian)**: Hypothesis questions, feature engineering, code consolidation
