@@ -48,23 +48,31 @@ Diabetes_Health_Indicators_Analysis/
 
 ## Key Analyses
 
-### 1. Exploratory Data Analysis
+### Exploratory Data Analysis
 
-- Univariate analysis of all variables
-- Distribution visualizations
-- Summary statistics
+| Analysis Type       | Techniques                         | Key Findings                                                |
+| ------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| Univariate          | Summary statistics, Distributions  | Right-skewed BMI (mean=28.38), 84.5% had cholesterol check  |
+| Bivariate           | Cramer's V, ANOVA, Kruskal-Wallis  | Strongest associations: HighBP (V=0.23), DiffWalk, HighChol |
+| Feature Engineering | Log transforms, BMI categorization | Improved normality with log transformations                 |
 
-### 2. Statistical Analysis
+### Statistical Testing
 
-- Association tests (Cramer's V, Kruskal-Wallis, ANOVA)
-- Hypothesis testing (Chi-square, Wilcoxon, Proportional tests)
-- Ordinal logistic regression
+| Hypothesis Test   | Variables Tested     | Conclusion                                   |
+| ----------------- | -------------------- | -------------------------------------------- |
+| Chi-square        | HighBP vs Diabetes   | Strong association (χ²=18,795, p<0.001)      |
+| Kruskal-Wallis    | Age vs Diabetes      | Significant difference (χ²=8,811.8, p<0.001) |
+| One-way ANOVA     | BMI vs Diabetes      | Significant difference (F=7,394, p<0.001)    |
+| Proportional Test | HighBP non-diabetics | True proportion ≠ 55% (p<0.001)              |
+| Wilcoxon Rank Sum | MentHlth vs Diabetes | Different distributions (p<0.001)            |
 
-### 3. Predictive Modeling
+### Predictive Modeling
 
-- Decision tree for diabetes prediction
-- Decision tree with prediabetes focus (using upsampling)
-- Model evaluation metrics
+| Model                       | Approach              | Performance                     |
+| --------------------------- | --------------------- | ------------------------------- |
+| Decision Tree               | All features          | 84.46% accuracy                 |
+| Decision Tree               | Upsampled prediabetes | Improved prediabetes detection  |
+| Ordinal Logistic Regression | Physiological factors | Significant interaction effects |
 
 ## Key Findings
 
