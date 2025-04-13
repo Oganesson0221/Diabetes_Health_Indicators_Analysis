@@ -114,6 +114,14 @@ Diabetes_Health_Indicators_Analysis/
   - vcd, MASS, brant, VGAM
   - DescTools
 
+## Contributors
+
+- **[Low Jo Yi, Nicole]()**: Summary Statistics, Proportional Testing, Formatting
+- **[Tian Yumeng]()**: Summary Statistics, Single Variable Hypothesis Testing
+- **[Lu ShanShan](shan2lu)**: Data description, finding associations, Wilcoxon Rank Sum Test, Ordinal Logistic Regression
+- **[Mehta Rishika](Oganesson0221)**: Data description, Summary Statistics, research questions, Statistical analysis, Machine Learning
+- **[Zhao Qixian](ZhaoQixian)**: Hypothesis questions, feature engineering, code consolidation
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
